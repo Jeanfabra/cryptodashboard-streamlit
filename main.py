@@ -5,6 +5,7 @@ import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 
 # Defining our 10 crypto variables
 BTC = "BTC/USD"
@@ -57,7 +58,8 @@ def get_market(coin: str):
     priceHigh24h = float(result['priceHigh24h'])
     priceLow24h = float(result['priceLow24h'])
     volumeUsd24h = float(result['volumeUsd24h'])
-    return priceHigh24h, priceLow24h, volumeUsd24h
+    change24h = float(result['change24h'])
+    return priceHigh24h, priceLow24h, volumeUsd24h, change24h
 
 def get_market_price(coin: str):
 
@@ -77,6 +79,9 @@ def get_market_price(coin: str):
 
 # Streamlit pages
 st.set_page_config(layout = 'wide')
+st.sidebar.image(
+"https://res.cloudinary.com/crunchbase-production/image/upload/c_lpad,f_auto,q_auto:eco,dpr_1/z3ahdkytzwi1jxlpazje",
+width=50)
 # Main Page
 def main_page():
     st.title('Crypto Dashboard - FTX API')
@@ -87,33 +92,28 @@ def pageII():
     st.title('🪙 Crypto Dashboard', anchor = "title")
 
     # Sidebar
+
     tickers = ('BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'EGLD', 'DOGE', 'XRP', 'UNI')
     dropdown = st.sidebar.selectbox('Pick a coin from the list', tickers)
     start_date = st.sidebar.date_input('Start Date', value = pd.to_datetime('2022-07-01'), key = 'dstart_date')
     end_date = st.sidebar.date_input('End Date', value = pd.to_datetime('today'), key = 'dend_date')
     dresolution = st.sidebar.slider('Resolution', min_value = 86400, max_value = 86400*30, step = 86400, key = 'dresolution')
+    
 
     # Page
     st.subheader(f'{dropdown}/USD', anchor = 'coin')
     coin_df = get_historical(dropdown, start_date = start_date, end_date = end_date, resolution = dresolution)
 
-    # 
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
-    with col1: check_1d = st.checkbox('1D')
-    with col2: check_7d = st.checkbox('7D')
-    with col3: check_1m = st.checkbox('1M')
-    with col4: check_3m = st.checkbox('3M')
-    with col5: check_1y = st.checkbox('1Y')
-    with col6: check_all = st.checkbox('All')
+    check = st.radio('Filter', ['1D', '7D', '1M', '3M', '1Y', 'All', 'None'], horizontal = True, index = 6)
 
-    if check_1d:
+    if check == '1D':
         back_days = date.today() - timedelta(days = 1)
         start_date = pd.to_datetime(back_days)
         end_date = pd.to_datetime('today')
         resolution = st.select_slider('Resolution', options = [15, 60, 300, 900, 3600, 14400, 86400], key = '1dresolution')
         coin_df = get_historical(dropdown, start_date = start_date, end_date = end_date, resolution = resolution)
 
-    if check_7d:
+    if check == '7D':
         back_days = date.today() - timedelta(days = 7)
         start_date = pd.to_datetime(back_days)
         end_date = pd.to_datetime('today')
@@ -121,73 +121,84 @@ def pageII():
         resolution = st.select_slider('Resolution', options = [300, 900, 3600, 14400, 86400, 86400*2, 86400*3], key = '7dresolution')
         coin_df = get_historical(dropdown, start_date = start_date, end_date = end_date, resolution = resolution)
 
-    if check_1m:
+    if check == '1M':
         back_days = date.today() - timedelta(days = 30)
         start_date = pd.to_datetime(back_days)
         end_date = pd.to_datetime('today')
         resolution = st.select_slider('Resolution', options = [900, 3600, 14400, 86400, 86400*2, 86400*3, 86400*4], key = '1mresolution')
         coin_df = get_historical(dropdown, start_date = start_date, end_date = end_date, resolution = resolution)
 
-    if check_3m:
+    if check == '3M':
         back_days = date.today() - timedelta(days = 90)
         start_date = pd.to_datetime(back_days)
         end_date = pd.to_datetime('today')
         resolution = st.select_slider('Resolution', options = [3600, 14400, 86400, 86400*2, 86400*3, 86400*4, 86400*7], key = '3mresolution')
         coin_df = get_historical(dropdown, start_date = start_date, end_date = end_date, resolution = resolution)
 
-    if check_1y:
+    if check == '1Y':
         back_days = date.today() - timedelta(days = 365)
         start_date = pd.to_datetime(back_days)
         end_date = pd.to_datetime('today')
         resolution = st.select_slider('Resolution', options = [86400, 86400*5, 86400*10, 86400*15, 86400*20, 86400*25, 86400*30], key = '1yresolution')
         coin_df = get_historical(dropdown, start_date = start_date, end_date = end_date, resolution = resolution)
 
-    if check_all:
+    if check == 'All':
         back_days = date.today() - timedelta(days = 1095) # 3 years
         start_date = pd.to_datetime(back_days)
         end_date = pd.to_datetime('today')
         resolution = st.select_slider('Resolution', options = [86400, 86400*5, 86400*10, 86400*15, 86400*20, 86400*25, 86400*30], key = '1yresolution')
         coin_df = get_historical(dropdown, start_date = start_date, end_date = end_date, resolution = resolution)
-        
+    
+    if check == 'None':
+        pass
 
     # Moving average - 30weeks
     coin_df['30wma'] = coin_df['close'].rolling(30).mean()
 
     variance = round(np.var(coin_df['close']),3)
-    priceHigh24h, priceLow24h, volumeUsd24h = get_market(dropdown)
-    col1, col2, col3, col4 = st.columns(4)
-    with col1: st.text(f'Variance: {variance}')
-    with col2: st.text(f'24h High: {priceHigh24h}')
-    with col3: st.text(f'24h Low: {priceLow24h}')
-    with col4: st.text(f'24h Volume: {volumeUsd24h}')
+    priceHigh24h, priceLow24h, volumeUsd24h, change24h = get_market(dropdown)
+    price = get_market_price(dropdown)
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col4: st.metric('Variance', variance)
+    with col2: st.metric('24h High', priceHigh24h)
+    with col3: st.metric('24h Low', priceLow24h)
+    with col5: st.metric('24h Volume', volumeUsd24h)
+    with col1: st.metric('Price', price, round(change24h,5))
 
-    # Candle chart
-    fig = go.Figure(data = [go.Candlestick(x = coin_df['date'],
-                            open = coin_df['open'], high = coin_df['high'],
-                            low = coin_df['low'], close = coin_df['close']
-                            )])
 
-    fig.update_layout(title = 'Candle chart', yaxis_title = f'{dropdown}  Price (USD)')
+    # Candle and volume chart
+    fig = make_subplots(rows = 2, cols = 1, shared_xaxes = True, vertical_spacing = 0.1, row_heights = [100,30])
+    fig.add_trace(
+        go.Candlestick(x = coin_df['date'],
+                       open = coin_df['open'], high = coin_df['high'],
+                       low = coin_df['low'], close = coin_df['close'],
+                       name = 'Candlestick Chart',
+                       ), row = 1, col = 1
+    )
+
+    fig.update_layout(xaxis_rangeslider_visible = False)
+
     fig.add_trace(
         go.Scatter(
             x = coin_df['date'],
             y = coin_df['30wma'],
             line = dict(color = '#e0e0e0', width = 2, dash = 'dot'),
             name = "30-week MA"
-        )
+        ), row = 1, col = 1
     )
-    st.plotly_chart(fig, use_container_width = True)
 
-    # Bar chart
-    barchart = px.bar(
-        title = 'Volume Chart',
-        data_frame = coin_df,
-        x = 'date',
-        y = 'volume',
-        color = 'volume',
-        color_continuous_scale = px.colors.sequential.Aggrnyl_r,
+    # Bar chart https://plotly.com/python-api-reference/generated/plotly.graph_objects.bar.html#plotly.graph_objects.bar.Marker
+    fig.add_trace(
+        go.Bar(
+            x = coin_df['date'],
+            y = coin_df['volume'],
+            marker = dict(color = coin_df['volume'], colorscale = 'aggrnyl_r')
+        ), row = 2, col = 1
     )
-    st.plotly_chart(barchart, use_container_width = True)
+    fig['layout']['xaxis2']['title'] = 'Date'
+    fig['layout']['yaxis']['title'] = 'Price'
+    fig['layout']['yaxis2']['title'] = 'Volume'
+    st.plotly_chart(fig, use_container_width = True)
 
     # Show data
     if st.checkbox('Show data'):
