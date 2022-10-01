@@ -15,4 +15,3 @@ pages = {
 
 selected_page = st.sidebar.radio("Navigation", pages.keys())
 pages[selected_page]()
-
