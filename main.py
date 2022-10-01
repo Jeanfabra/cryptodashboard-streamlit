@@ -4,8 +4,9 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
-import plotly.express as px
 from plotly.subplots import make_subplots
+from test import test
+
 
 # Defining our 10 crypto variables
 BTC = "BTC/USD"
@@ -59,23 +60,9 @@ def get_market(coin: str):
     priceLow24h = float(result['priceLow24h'])
     volumeUsd24h = float(result['volumeUsd24h'])
     change24h = float(result['change24h'])
-    return priceHigh24h, priceLow24h, volumeUsd24h, change24h
-
-def get_market_price(coin: str):
-
-    '''This function extracts data from FTX API and returns a dataframe
-    with insights according to the chosen crypto'''
-
-    if coin == "EGLD" or coin == 'DOT' or coin == 'ADA':
-        coin = coin + '-PERP'
-    else:
-        coin = coin + '/USD'
-
-    url =  f'{URL_BASE}/markets/{coin}'
-    res = requests.get(url).json()
-    result = pd.DataFrame(res['result'], index = [0])
-    price = result['price']
-    return price
+    price = float(result['price'])
+    items = [price, priceHigh24h, priceLow24h, change24h, volumeUsd24h]
+    return items
 
 # Streamlit pages
 st.set_page_config(layout = 'wide')
@@ -133,8 +120,8 @@ def main_page():
 
 # Dashboard
 def pageII():
-    st.title('🪙 Crypto Dashboard', anchor = "title")
-
+    st.title('Crypto Dashboard', anchor = "title")
+    st.header(test())
     # Sidebar
 
     tickers = ('BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'EGLD', 'DOGE', 'XRP', 'UNI')
@@ -142,10 +129,13 @@ def pageII():
     start_date = st.sidebar.date_input('Start Date', value = pd.to_datetime('2022-07-01'), key = 'dstart_date')
     end_date = st.sidebar.date_input('End Date', value = pd.to_datetime('now'), key = 'dend_date')
     dresolution = st.sidebar.slider('Resolution', min_value = 86400, max_value = 86400*30, step = 86400, key = 'dresolution')
-    
 
     # Page
-    st.subheader(f'{dropdown}/USD', anchor = 'coin')
+    col1, col2 = st.columns([1, 5])
+    coin_image = f'img/{dropdown.lower()}.png'
+    col1.header(f'{dropdown}/USD')
+    col2.image(coin_image, width = 60)
+
     coin_df = get_historical(dropdown, start_date = start_date, end_date = end_date, resolution = dresolution)
 
     check = st.radio('Filter', ['1D', '7D', '1M', '3M', '1Y', 'All', 'None'], horizontal = True, index = 6)
@@ -198,17 +188,21 @@ def pageII():
 
     # Moving average - 30weeks
     coin_df['30wma'] = coin_df['close'].rolling(30).mean()
-
     variance = round(np.var(coin_df['close']),3)
-    priceHigh24h, priceLow24h, volumeUsd24h, change24h = get_market(dropdown)
-    price = get_market_price(dropdown)
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col4: st.metric('Variance', variance)
-    with col2: st.metric('24h High', priceHigh24h)
-    with col3: st.metric('24h Low', priceLow24h)
-    with col5: st.metric('24h Volume', volumeUsd24h)
-    with col1: st.metric('Price', price, round(change24h,5))
+    items = get_market(dropdown)
+    price = items[0]
+    priceHigh24h = items[1]
+    priceLow24h = items[2]
+    change24h = items[3]
+    volumeUsd24h = items[4]
 
+    col1, col2, col3, col4 = st.columns([2, 2, 2, 8])
+    col1.metric('Price', f'{price:,}', f'{round(change24h*100,2)}%')
+    col2.metric('24h High', f'{priceHigh24h:,}')
+    col3.metric('24h Low', f'{priceLow24h:,}')
+    col4.metric('24h Volume', f'{volumeUsd24h:,}')
+    
+    st.metric('Variance', f'{variance:,}')
 
     # Candle and volume chart
     fig = make_subplots(rows = 2, cols = 1, shared_xaxes = True, vertical_spacing = 0.1, row_heights = [100,30])
@@ -262,14 +256,14 @@ def pageII():
 
 
     if box01 != 'USD' and box02 != 'USD':
-        price1 = get_market_price(box01)
-        price2 = get_market_price(box02)
+        price1 = get_market(box01)[0]
+        price2 = get_market(box02)[0]
         convert = float(quantity*price1/price2)
     elif box01 == 'USD' and box02 != 'USD':
-        price2 = get_market_price(box02)
+        price2 = get_market(box02)[0]
         convert = float(quantity/price2)
     elif box01 != 'USD' and box02 == 'USD':
-        price1 = get_market_price(box01)
+        price1 = get_market(box01)[0]
         convert = float(quantity*price1)
     else:
         convert = quantity
