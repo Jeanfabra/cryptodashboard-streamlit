@@ -2,8 +2,13 @@ import streamlit as st
 
 def pageI():
     st.image('https://4.bp.blogspot.com/-1hBZaDQV6lY/XD930XvmeRI/AAAAAAAAAuM/Mb0nonSZOFkk0umjU7mXMdMhroDjvTq0ACKgBGAs/w5120-h1440-c/bitcoin-cryptocurrency-cube-abstract-4-4k.jpg')
-    st.title('Welcome!!')
     st.markdown('''
+    ## ⚠️⚠️⚠️⚠️ This website is being updated ⚠️⚠️⚠️⚠️
+    ## The first version of this application was based on data extracted from FTX API. Due to the latest news related to the exhange, there have been problems with the requests. 
+    ## I am currently updating the app with another API.
+    ## Sorry for the inconvenience! See you soon! - Jean 
+    ## ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+
     ## Crypto Dashboard - FTX API 💥
     ### [GitHub Link](https://github.com/Jeanfabra/cryptodashboard-streamlit)
     ### Feel free to use this tool for your cryptocurrency analysis! You can get real-time information about prices, price history, and cryptocurrency transaction volume. This is possible thanks to [FTX API](https://docs.ftx.com/#overview).

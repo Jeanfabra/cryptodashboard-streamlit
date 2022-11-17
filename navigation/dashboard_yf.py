@@ -16,6 +16,7 @@ def get_historical(coin: str, start_date, end_date, period = None, interval = '1
     historical = stock.history(period = period, start = start_date, end = end_date, interval = interval).reset_index()
     if "Datetime" in historical.columns:
         historical.rename({"Datetime": "Date"}, axis = 1, inplace = True)
+
     return historical
 
 def pageII():
@@ -25,8 +26,6 @@ def pageII():
     # Sidebar
     tickers = ('BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'EGLD', 'DOGE', 'XRP', 'BNB')
     coin = st.sidebar.selectbox('Pick a coin from the list', tickers)
-    start_date = st.sidebar.date_input('Start Date', value = pd.to_datetime('2022-09-01'), key = 'dstart_date')
-    end_date = st.sidebar.date_input('End Date', value = pd.to_datetime('now'), key = 'dend_date')
 
     # Page
     col1, col2 = st.columns([1, 5])
@@ -34,52 +33,49 @@ def pageII():
     col1.header(f'{coin}/USD')
     col2.image(coin_image, width = 60)
 
-    coin_df = get_historical(coin, start_date, end_date)
+    check = st.radio('Filter', ['1D', '5D', '1M', '3M', '6M', '1Y', '2Y', 'All', 'None'], horizontal = True, index = 8)
 
-    check = st.radio('Filter', ['1D', '7D', '1M', '3M', '1Y', 'All', 'None'], horizontal = True, index = 6)
+    if check == 'None':
+        start_date = st.sidebar.date_input('Start Date', value = pd.to_datetime('2022-01-01'), key = 'dstart_date')
+        end_date = st.sidebar.date_input('End Date', value = pd.to_datetime('now'), key = 'dend_date')
+        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1mo"], value = "1d", key = 'Nresolution')
+        coin_df = get_historical(coin, start_date, end_date, interval = resolution)
 
     if check == '1D':
         resolution = st.select_slider('Resolution', options = ["1m","2m", "5m", "15m", "30m", "60m", "90m", "1d"], value = "30m", key = '1dresolution')
         coin_df = get_historical(coin, period = '1d', start_date = None, end_date = None, interval = resolution)
 
-    if check == '7D':
-        back_days = date.today() - timedelta(days = 7)
-        start_date = pd.to_datetime(back_days)
-        end_date = pd.to_datetime('now')
-        coin_df = get_historical(coin, start_date = start_date, end_date = end_date, resolution = 900)
-        resolution = st.select_slider('Resolution', options = [300, 900, 3600, 14400, 86400, 86400*2, 86400*3], key = '7dresolution')
-        coin_df = get_historical(coin, start_date = start_date, end_date = end_date, resolution = resolution)
+    if check == '5D':
+        resolution = st.select_slider('Resolution', options = ["30m", "60m", "90m", "1d"], value = "30m", key = '5dresolution')
+        coin_df = get_historical(coin, period = '5d', start_date = None, end_date = None, interval = resolution)
 
     if check == '1M':
-        back_days = date.today() - timedelta(days = 30)
-        start_date = pd.to_datetime(back_days)
-        end_date = pd.to_datetime('now')
-        resolution = st.select_slider('Resolution', options = [900, 3600, 14400, 86400, 86400*2, 86400*3, 86400*4], key = '1mresolution')
-        coin_df = get_historical(coin, start_date = start_date, end_date = end_date, resolution = resolution)
+        resolution = st.select_slider('Resolution', options = ["90m", "1d", "5d", "1wk", "1mo"], value = "1d", key = '1mresolution')
+        coin_df = get_historical(coin, period = '1mo', start_date = None, end_date = None, interval = resolution)
 
     if check == '3M':
-        back_days = date.today() - timedelta(days = 90)
-        start_date = pd.to_datetime(back_days)
-        end_date = pd.to_datetime('now')
-        resolution = st.select_slider('Resolution', options = [3600, 14400, 86400, 86400*2, 86400*3, 86400*4, 86400*7], key = '3mresolution')
-        coin_df = get_historical(coin, start_date = start_date, end_date = end_date, resolution = resolution)
+        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1wk", "1mo"], value = "1d", key = '3mresolution')
+        coin_df = get_historical(coin, period = '3mo', start_date = None, end_date = None, interval = resolution)
+
+    if check == '6M':
+        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1wk", "1mo", "3mo"], value = "1d", key = '6mresolution')
+        coin_df = get_historical(coin, period = '6mo', start_date = None, end_date = None, interval = resolution)
 
     if check == '1Y':
-        back_days = date.today() - timedelta(days = 365)
-        start_date = pd.to_datetime(back_days)
-        end_date = pd.to_datetime('now')
-        resolution = st.select_slider('Resolution', options = [86400, 86400*5, 86400*10, 86400*15, 86400*20, 86400*25, 86400*30], key = '1yresolution')
-        coin_df = get_historical(coin, start_date = start_date, end_date = end_date, resolution = resolution)
+        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1wk", "1mo", "3mo"], value = "1d", key = '1yrresolution')
+        coin_df = get_historical(coin, period = '1y', start_date = None, end_date = None, interval = resolution)
+
+    if check == '2Y':
+        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1wk", "1mo", "3mo"], value = "1d", key = '2yrresolution')
+        coin_df = get_historical(coin, period = '2y', start_date = None, end_date = None, interval = resolution)
 
     if check == 'All':
         back_days = date.today() - timedelta(days = 1095) # 3 years
         start_date = pd.to_datetime(back_days)
         end_date = pd.to_datetime('now')
-        resolution = st.select_slider('Resolution', options = [86400, 86400*5, 86400*10, 86400*15, 86400*20, 86400*25, 86400*30], key = '1yresolution')
-        coin_df = get_historical(coin, start_date = start_date, end_date = end_date, resolution = resolution)
+        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1wk", "1mo", "3mo"], value = "1d", key = 'allrresolution')
+        coin_df = get_historical(coin, start_date = start_date, end_date = end_date, interval = resolution)
 
-    if check == 'None':
-        pass
 
     # Moving average - 30weeks
     coin_df['30wma'] = coin_df['Close'].rolling(30).mean()
