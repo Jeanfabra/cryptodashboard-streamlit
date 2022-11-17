@@ -19,8 +19,24 @@ def get_historical(coin: str, start_date, end_date, period = None, interval = '1
 
     return historical
 
+
+def get_market(coin: str):
+
+    '''This function extracts data from yfinance and returns a dataframe
+    with insights according to the chosen crypto'''
+
+    coin = coin + "-USD"
+    stock = yf.Ticker(coin)
+    info = {
+        "priceHigh24h": stock.info['dayHigh'],
+        "priceLow24h": stock.info['dayLow'],
+        "volumeUsd24h": stock.info['volume24Hr'],
+        "price": stock.info['regularMarketPrice']
+    }
+    return info
+
 def pageII():
-    
+
     st.title('Crypto Dashboard', anchor = "title")
 
     # Sidebar
@@ -33,6 +49,17 @@ def pageII():
     col1.header(f'{coin}/USD')
     col2.image(coin_image, width = 60)
 
+    # Metrics
+    col1, col2, col3 = st.columns([2, 2, 2])
+    info = get_market(coin)
+    price_difference_24h = (info['price'] - info['priceHigh24h'])/info['price'] * 100
+    col1.metric('Price', f'{info["price"]:,}', f'{round(price_difference_24h,2)}%')
+    col2.metric('24h High', f'{info["priceHigh24h"]:,}')
+    col3.metric('24h Low', f'{info["priceLow24h"]:,}')
+
+    st.metric('24h Volume', f'{info["volumeUsd24h"]:,}')
+
+    # Check periods
     check = st.radio('Filter', ['1D', '5D', '1M', '3M', '6M', '1Y', '2Y', 'All', 'None'], horizontal = True, index = 8)
 
     if check == 'None':
@@ -116,4 +143,6 @@ def pageII():
     fig['layout']['yaxis2']['title'] = 'Volume'
     st.plotly_chart(fig, use_container_width = True)
 
-
+    # Show data
+    if st.checkbox('Show data'):
+        st.dataframe(coin_df)

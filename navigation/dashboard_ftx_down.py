@@ -6,6 +6,10 @@ import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+'''FTX API is not working at the moment. This part of the code is deprecated. 
+    However, it is left in the repository on faith that at some point FTX or some similar company
+    will retrieve the API '''
+
 URL_BASE = "https://ftx.com/api"
 
 def get_historical(coin, start_date, end_date, resolution = 86400):
@@ -53,8 +57,8 @@ def get_market(coin: str):
 def pageII():
 
     st.title('Crypto Dashboard', anchor = "title")
-    # Sidebar
 
+    # Sidebar
     tickers = ('BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'EGLD', 'DOGE', 'XRP', 'UNI')
     dropdown = st.sidebar.selectbox('Pick a coin from the list', tickers)
     start_date = st.sidebar.date_input('Start Date', value = pd.to_datetime('2022-07-01'), key = 'dstart_date')
@@ -69,6 +73,7 @@ def pageII():
 
     coin_df = get_historical(dropdown, start_date = start_date, end_date = end_date, resolution = dresolution)
 
+    # Check periods
     check = st.radio('Filter', ['1D', '7D', '1M', '3M', '1Y', 'All', 'None'], horizontal = True, index = 6)
 
     if check == '1D':
@@ -127,6 +132,7 @@ def pageII():
     change24h = items[3]
     volumeUsd24h = items[4]
 
+    # Metrics
     col1, col2, col3, col4 = st.columns([2, 2, 2, 8])
     col1.metric('Price', f'{price:,}', f'{round(change24h*100,2)}%')
     col2.metric('24h High', f'{priceHigh24h:,}')
