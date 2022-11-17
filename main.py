@@ -1,5 +1,5 @@
 import streamlit as st
-from navigation import landing, dashboard, calculator
+from navigation import landing, dashboard_yf, calculator
 
 # Streamlit pages
 st.set_page_config(layout = 'wide')
@@ -9,7 +9,7 @@ width=50)
 
 pages = {
     '🏠 Main Page': landing.pageI,
-    '📈 Crypto Dashboard': dashboard.pageII,
+    '📈 Crypto Dashboard': dashboard_yf.pageII,
     '💰 Calculator': calculator.calculator
 }
 
