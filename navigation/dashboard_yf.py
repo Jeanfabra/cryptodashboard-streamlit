@@ -38,7 +38,6 @@ def get_market(coin: str):
 def pageII():
 
     st.title('Crypto Dashboard', anchor = "title")
-
     # Sidebar
     tickers = ('BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'MATIC', 'EGLD', 'DOGE', 'XRP', 'BNB')
     coin = st.sidebar.selectbox('Pick a coin from the list', tickers)
