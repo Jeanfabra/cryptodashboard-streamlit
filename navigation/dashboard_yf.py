@@ -7,32 +7,35 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 def get_historical(coin: str, start_date, end_date, period = None, interval = '1d'):
-
     ''' This function extracts data from yfinance API and returns a dataframe
       with information about historical prices according to the chosen crypto'''
 
-    coin = coin + "-USD"
+    coin += "-USD"
     stock = yf.Ticker(coin)
+
     historical = stock.history(period = period, start = start_date, end = end_date, interval = interval).reset_index()
     if "Datetime" in historical.columns:
-        historical.rename({"Datetime": "Date"}, axis = 1, inplace = True)
+        historical.rename({"Datetime": "Date"}, axis=1, inplace=True)
 
     return historical
 
-
 def get_market(coin: str):
-
     '''This function extracts data from yfinance and returns a dataframe
     with insights according to the chosen crypto'''
 
-    coin = coin + "-USD"
+    coin += "-USD"
     stock = yf.Ticker(coin)
+
+    # yfinance info: can't find 'regularMarketPrice' replaced by 'regularMarketDayLow'
+    # https://github.com/ranaroussi/yfinance/issues/1519
+    
     info = {
-        "priceHigh24h": stock.info['dayHigh'],
-        "priceLow24h": stock.info['dayLow'],
-        "volumeUsd24h": stock.info['volume24Hr'],
-        "price": stock.info['regularMarketPrice']
+        "priceHigh24h": stock.info.get('dayHigh', None),
+        "priceLow24h": stock.info.get('dayLow', None),
+        "volumeUsd24h": stock.info.get('volume24Hr', None),
+        "price": stock.info.get('regularMarketDayLow', None)
     }
+    
     return info
 
 def pageII():
@@ -59,49 +62,40 @@ def pageII():
     st.metric('24h Volume', f'{info["volumeUsd24h"]:,}')
 
     # Check periods
-    check = st.radio('Filter', ['1D', '5D', '1M', '3M', '6M', '1Y', '2Y', 'All', 'None'], horizontal = True, index = 8)
+
+    # The code has been simplified by using a dictionary to store the resolution options and default values 
+    # for each filter option, instead of having multiple if conditionals for each option.
+
+    check = st.radio('Filter', ['1D', '5D', '1M', '3M', '6M', '1Y', '2Y', 'All', 'None'], horizontal=True, index=8)
+
+    resolution_options = {
+        '1D': (["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1d"], "30m"),
+        '5D': (["30m", "60m", "90m", "1d"], "30m"),
+        '1M': (["90m", "1d", "5d", "1wk", "1mo"], "1d"),
+        '3M': (["1d", "5d", "1wk", "1mo"], "1d"),
+        '6M': (["1d", "5d", "1wk", "1mo", "3mo"], "1d"),
+        '1Y': (["1d", "5d", "1wk", "1mo", "3mo"], "1d"),
+        '2Y': (["1d", "5d", "1wk", "1mo", "3mo"], "1d")
+    }
 
     if check == 'None':
-        start_date = st.sidebar.date_input('Start Date', value = pd.to_datetime('2022-01-01'), key = 'dstart_date')
-        end_date = st.sidebar.date_input('End Date', value = pd.to_datetime('now'), key = 'dend_date')
-        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1mo"], value = "1d", key = 'Nresolution')
-        coin_df = get_historical(coin, start_date, end_date, interval = resolution)
-
-    if check == '1D':
-        resolution = st.select_slider('Resolution', options = ["1m","2m", "5m", "15m", "30m", "60m", "90m", "1d"], value = "30m", key = '1dresolution')
-        coin_df = get_historical(coin, period = '1d', start_date = None, end_date = None, interval = resolution)
-
-    if check == '5D':
-        resolution = st.select_slider('Resolution', options = ["30m", "60m", "90m", "1d"], value = "30m", key = '5dresolution')
-        coin_df = get_historical(coin, period = '5d', start_date = None, end_date = None, interval = resolution)
-
-    if check == '1M':
-        resolution = st.select_slider('Resolution', options = ["90m", "1d", "5d", "1wk", "1mo"], value = "1d", key = '1mresolution')
-        coin_df = get_historical(coin, period = '1mo', start_date = None, end_date = None, interval = resolution)
-
-    if check == '3M':
-        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1wk", "1mo"], value = "1d", key = '3mresolution')
-        coin_df = get_historical(coin, period = '3mo', start_date = None, end_date = None, interval = resolution)
-
-    if check == '6M':
-        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1wk", "1mo", "3mo"], value = "1d", key = '6mresolution')
-        coin_df = get_historical(coin, period = '6mo', start_date = None, end_date = None, interval = resolution)
-
-    if check == '1Y':
-        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1wk", "1mo", "3mo"], value = "1d", key = '1yrresolution')
-        coin_df = get_historical(coin, period = '1y', start_date = None, end_date = None, interval = resolution)
-
-    if check == '2Y':
-        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1wk", "1mo", "3mo"], value = "1d", key = '2yrresolution')
-        coin_df = get_historical(coin, period = '2y', start_date = None, end_date = None, interval = resolution)
-
-    if check == 'All':
-        back_days = date.today() - timedelta(days = 1095) # 3 years
+        start_date = st.sidebar.date_input('Start Date', value=pd.to_datetime('2022-01-01'), key='dstart_date')
+        end_date = st.sidebar.date_input('End Date', value=pd.to_datetime('now'), key='dend_date')
+        resolution = st.select_slider('Resolution', options=["1d", "5d", "1mo"], value="1d", key='Nresolution')
+        coin_df = get_historical(coin, start_date, end_date, interval=resolution)
+    elif check == 'All':
+        back_days = date.today() - timedelta(days=1095)  # 3 years
         start_date = pd.to_datetime(back_days)
         end_date = pd.to_datetime('now')
-        resolution = st.select_slider('Resolution', options = ["1d", "5d", "1wk", "1mo", "3mo"], value = "1d", key = 'allrresolution')
-        coin_df = get_historical(coin, start_date = start_date, end_date = end_date, interval = resolution)
-
+        resolution = st.select_slider('Resolution', options=["1d", "5d", "1wk", "1mo", "3mo"], value="1d",
+                                    key='allrresolution')
+        coin_df = get_historical(coin, start_date=start_date, end_date=end_date, interval=resolution)
+    else:
+        options, default_value = resolution_options[check]
+        period = check.lower()
+        resolution = st.select_slider('Resolution', options=options, value=default_value,
+                                    key=f'{period}resolution')
+        coin_df = get_historical(coin, period=period, start_date=None, end_date=None, interval=resolution)
 
     # Moving average - 30weeks
     coin_df['30wma'] = coin_df['Close'].rolling(30).mean()
